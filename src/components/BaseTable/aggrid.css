@@ -1,0 +1,69 @@
+.ag-theme-quartz input[class^="ag-"]:not([type]),
+.ag-theme-quartz input[class^="ag-"][type="text"],
+.ag-theme-quartz input[class^="ag-"][type="number"],
+.ag-theme-quartz input[class^="ag-"][type="tel"],
+.ag-theme-quartz input[class^="ag-"][type="date"],
+.ag-theme-quartz input[class^="ag-"][type="datetime-local"],
+.ag-theme-quartz textarea[class^="ag-"],
+.ag-theme-quartz-dark input[class^="ag-"]:not([type]),
+.ag-theme-quartz-dark input[class^="ag-"][type="text"],
+.ag-theme-quartz-dark input[class^="ag-"][type="number"],
+.ag-theme-quartz-dark input[class^="ag-"][type="tel"],
+.ag-theme-quartz-dark input[class^="ag-"][type="date"],
+.ag-theme-quartz-dark input[class^="ag-"][type="datetime-local"],
+.ag-theme-quartz-dark textarea[class^="ag-"],
+.ag-theme-quartz-auto-dark input[class^="ag-"]:not([type]),
+.ag-theme-quartz-auto-dark input[class^="ag-"][type="text"],
+.ag-theme-quartz-auto-dark input[class^="ag-"][type="number"],
+.ag-theme-quartz-auto-dark input[class^="ag-"][type="tel"],
+.ag-theme-quartz-auto-dark input[class^="ag-"][type="date"],
+.ag-theme-quartz-auto-dark input[class^="ag-"][type="datetime-local"],
+.ag-theme-quartz-auto-dark textarea[class^="ag-"] {
+  min-height: 24px;
+  transition: border 0.2s, box-shadow 0.2s;
+  border-color: #1677ff;
+}
+
+.ag-theme-custom input[class^="ag-"]:not([type]),
+.ag-theme-quartz input[class^="ag-"][type="text"],
+.ag-theme-quartz input[class^="ag-"][type="number"],
+.ag-theme-quartz input[class^="ag-"][type="tel"],
+.ag-theme-quartz input[class^="ag-"][type="date"],
+.ag-theme-quartz input[class^="ag-"][type="datetime-local"],
+.ag-theme-quartz textarea[class^="ag-"],
+.ag-theme-quartz-dark input[class^="ag-"]:not([type]),
+.ag-theme-quartz-dark input[class^="ag-"][type="text"],
+.ag-theme-quartz-dark input[class^="ag-"][type="number"],
+.ag-theme-quartz-dark input[class^="ag-"][type="tel"],
+.ag-theme-quartz-dark input[class^="ag-"][type="date"],
+.ag-theme-quartz-dark input[class^="ag-"][type="datetime-local"],
+.ag-theme-quartz-dark textarea[class^="ag-"],
+.ag-theme-quartz-auto-dark input[class^="ag-"]:not([type]),
+.ag-theme-quartz-auto-dark input[class^="ag-"][type="text"],
+.ag-theme-quartz-auto-dark input[class^="ag-"][type="number"],
+.ag-theme-quartz-auto-dark input[class^="ag-"][type="tel"],
+.ag-theme-quartz-auto-dark input[class^="ag-"][type="date"],
+.ag-theme-quartz-auto-dark input[class^="ag-"][type="datetime-local"],
+.ag-theme-quartz-auto-dark textarea[class^="ag-"] {
+  min-height: 24px;
+  border-color: #1677ff;
+}
+
+input[class^="ag-"]:not([type]):focus,
+input[class^="ag-"][type="text"]:focus,
+input[class^="ag-"][type="number"]:focus,
+input[class^="ag-"][type="tel"]:focus,
+input[class^="ag-"][type="date"]:focus,
+input[class^="ag-"][type="datetime-local"]:focus,
+textarea[class^="ag-"]:focus {
+  box-shadow: none;
+}
+
+.ag-picker-field-wrapper.ag-picker-has-focus,
+.ag-picker-field-wrapper:focus-within {
+  box-shadow: none;
+}
+
+.ag-row {
+  cursor: pointer;
+}
