@@ -1678,7 +1678,7 @@ ag-grid, ag-grid-angular, ag-grid-aurelia, ag-grid-ng2, ag-grid-polymer {
 }
 
 .ag-advanced-filter-builder-item-button:focus-visible, .ag-advanced-filter-builder-pill:focus-visible {
-	shadow: var(--ag-focus-shadow)
+	box-shadow: var(--ag-focus-shadow)
 }
 
 .ag-advanced-filter-builder-pill-display {
@@ -3940,7 +3940,7 @@ ag-grid, ag-grid-angular, ag-grid-aurelia, ag-grid-ng2, ag-grid-polymer {
 }
 
 .ag-drag-handle {
-	color: varXXX(--ag-icon-font-color);
+	color: #444;
 	cursor: grab
 }
 
@@ -5310,11 +5310,11 @@ input[class^=ag-][type=range]:disabled {
 :where(input[class^=ag-]:not([type]),input[class^=ag-][type=text],input[class^=ag-][type=number],input[class^=ag-][type=tel],input[class^=ag-][type=date],input[class^=ag-][type=datetime-local],textarea[class^=ag-]):where(:invalid) {
 	background-color: var(--ag-input-invalid-background-color);
 	border: var(--ag-input-invalid-border);
-	color: var(--ag-input-invalid-text-color)
+	color: var(--ag-input-invalid-text-color);
 }
 
 :where(input[class^=ag-]:not([type]),input[class^=ag-][type=text],input[class^=ag-][type=number],input[class^=ag-][type=tel],input[class^=ag-][type=date],input[class^=ag-][type=datetime-local],textarea[class^=ag-]):where(.invalid) {
 	background-color: var(--ag-input-invalid-background-color);
 	border: var(--ag-input-invalid-border);
-	color: var(--ag-input-invalid-text-color)
+	color: var(--ag-input-invalid-text-color);
 }

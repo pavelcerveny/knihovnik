@@ -1,6 +1,6 @@
 import { BookForm } from "../components";
 
-export default function AddBook() {
+export default function EditBook() {
 	return (
 		<>
 			<BookForm />
