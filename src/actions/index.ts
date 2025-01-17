@@ -16,6 +16,12 @@ export interface Location {
   name: string;
 }
 
+export interface Setting {
+  id: number;
+  name: string;
+  value: string;
+}
+
 export interface Book {
   id: number;
   name: string;
@@ -39,10 +45,16 @@ export async function fetchCategories() {
     return {categories};
 }
 
- export async function fetchLocations() {
+export async function fetchLocations() {
     const db = await Database.load(DB_PATH);
     const locations = await db.select<Location[]>("SELECT * FROM locations ORDER BY name") ?? [];
     return {locations};
+}
+
+export async function fetchSettings() {
+  const db = await Database.load(DB_PATH);
+  const settings = await db.select<Setting[]>("SELECT * FROM settings") ?? [];
+  return {settings};
 }
 
 export async function fetchBooks({searchValue}: {searchValue?: string}): Promise<{books: Book[]}> {
@@ -60,10 +72,13 @@ export async function fetchBooks({searchValue}: {searchValue?: string}): Promise
       categories.id as categoryId, categories.name as categoryName, 
       locations.id as locationId, locations.name as locationName
       FROM books 
-      LEFT JOIN authors ON books.author_id = authors.id 
-      LEFT JOIN categories ON books.category_id = categories.id 
+      LEFT JOIN author_book ON books.id = author_book.book_id
+      LEFT JOIN authors ON author_book.author_id = authors.id
+      LEFT JOIN category_book ON books.id = category_book.book_id
+      LEFT JOIN categories ON category_book.category_id = categories.id 
       LEFT JOIN locations ON books.location_id = locations.id
       ${where}
+      ORDER BY books.name
       `) ?? [];
     
       const hydratedBooks = books.map((book) => ({
@@ -114,4 +129,9 @@ export async function deleteBook(id: unknown) {
 export async function deleteAuthor(id: unknown) {
   const db = await Database.load(DB_PATH);
   await db.execute(`DELETE FROM authors WHERE id = ?`, [id]);
+}
+
+export async function replaceSetting(name: string, value: string) {
+  const db = await Database.load(DB_PATH);
+  await db.execute(`REPLACE INTO settings (name, value) VALUES (?, ?)`, [name, value]);
 }

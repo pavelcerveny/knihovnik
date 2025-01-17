@@ -1,12 +1,23 @@
-import { AppShell, Burger, NavLink } from "@mantine/core";
+import { AppShell, Burger, Button, NavLink } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { BookOpen, Plus, UserIcon } from "lucide-react";
+import { BookOpen, MinusIcon, Plus, PlusIcon, UserIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link, Outlet } from "react-router-dom";
+import { getCurrentWebview } from '@tauri-apps/api/webview';
+import { useEffect, useState } from "react";
+
+async function zoomIn(zoom: number) {
+  await getCurrentWebview().setZoom(zoom);
+}
 
 export default function Root() {
   const { t } = useTranslation();
   const [opened, { toggle }] = useDisclosure();
+  const [zoom, setZoom] = useState(1);
+  
+  useEffect(() => {
+    zoomIn(zoom);
+  }, [zoom]);
 
   return (
     <>
@@ -19,19 +30,27 @@ export default function Root() {
       }}
       padding="md"
     >
-      <AppShell.Header>
-        <Burger
-          opened={opened}
-          onClick={toggle}
-          hiddenFrom="sm"
-          size="sm"
-        />
-        <Link to="/">
-          <div className="flex items-center gap-x-4 h-full pl-4">
-              <BookOpen/>
-              <div className="font-bold text-md">{t("appName")}</div>
-          </div>
-        </Link>
+      <AppShell.Header className="flex items-center justify-between">
+        <div>
+          <Burger
+            opened={opened}
+            onClick={toggle}
+            hiddenFrom="sm"
+            size="sm"
+          />
+          <Link to="/">
+            <div className="flex items-center gap-x-4 h-full pl-4">
+                <BookOpen/>
+                <div className="font-bold text-md">{t("appName")}</div>
+            </div>
+          </Link>
+        </div>
+
+        <div className="flex items-center gap-4 pr-4">
+          <Button leftSection={<PlusIcon />} onClick={() => setZoom(zoom + 0.1)}>{t('zoomIn')}</Button>
+          <Button leftSection={<MinusIcon />} onClick={() => setZoom(zoom - 0.1)}>{t('zoomOut')}</Button>
+        </div>
+        
       </AppShell.Header>
 
       <AppShell.Navbar p="md" className="gap-y-4">

@@ -62,6 +62,7 @@ export default function Books() {
           colId: "publish_year",
           cellDataType: "text",
           headerName: t("publishedYear"),
+          maxWidth: 80,
         },
         {
           field: "category",
@@ -76,6 +77,7 @@ export default function Books() {
           headerName: t("location"),
           valueFormatter: ({ value }) => value?.name,
           filterValueGetter: ({ data }) => data?.location?.name,
+          maxWidth: 80,
         },
         {
           cellClass:

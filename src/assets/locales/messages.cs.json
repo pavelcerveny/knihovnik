@@ -36,6 +36,8 @@
         "newBook": "Nová kniha",
         "error": "Chyba",
         "searchBooks": "Hledat knihy",
-        "showAuthors": "Zobrazit autory"
+        "showAuthors": "Zobrazit autory",
+        "zoomIn": "Přiblížit",
+        "zoomOut": "Oddálit"
     }
 }

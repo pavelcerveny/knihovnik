@@ -13,19 +13,19 @@ pub fn run() {
         Migration {
             version: 1,
             description: "create_authors_table",
-            sql: "CREATE TABLE IF NOT EXISTS authors (id INTEGER PRIMARY KEY, name TEXT NOT NULL);",
+            sql: "CREATE TABLE IF NOT EXISTS authors (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL);",
             kind: MigrationKind::Up,
         },
         Migration {
             version: 2,
             description: "create_categories_table",
-            sql: "CREATE TABLE IF NOT EXISTS categories (id INTEGER PRIMARY KEY, name TEXT NOT NULL);",
+            sql: "CREATE TABLE IF NOT EXISTS categories (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL);",
             kind: MigrationKind::Up,
         },
         Migration {
             version: 3,
             description: "create_locations_table",
-            sql: "CREATE TABLE IF NOT EXISTS locations (id INTEGER PRIMARY KEY, name TEXT NOT NULL);",
+            sql: "CREATE TABLE IF NOT EXISTS locations (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL);",
             kind: MigrationKind::Up,
         },
         Migration {
@@ -37,11 +37,35 @@ pub fn run() {
                 publish_year INTEGER NULL,
                 number_of_pages INTEGER NULL,
                 image_url TEXT NULL,
-                author_id INTEGER NULL REFERENCES authors(id) ON DELETE SET NULL ON UPDATE CASCADE,
-                category_id INTEGER NULL REFERENCES categories(id) ON DELETE SET NULL ON UPDATE CASCADE,
                 location_id INTEGER NULL REFERENCES locations(id) ON DELETE SET NULL ON UPDATE CASCADE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )",
+            );",
+            kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 5,
+            description: "create_author_book_table",
+            sql: "CREATE TABLE IF NOT EXISTS author_book (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                book_id INTEGER NULL REFERENCES books(id) ON DELETE SET NULL ON UPDATE CASCADE,
+                author_id INTEGER NULL REFERENCES authors(id) ON DELETE SET NULL ON UPDATE CASCADE
+            );",
+            kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 6,
+            description: "create_category_book_table",
+            sql: "CREATE TABLE IF NOT EXISTS category_book (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                book_id INTEGER NULL REFERENCES books(id) ON DELETE SET NULL ON UPDATE CASCADE,
+                category_id INTEGER NULL REFERENCES categories(id) ON DELETE SET NULL ON UPDATE CASCADE
+            );",
+            kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 7,
+            description: "create_settings_table",
+            sql: "CREATE TABLE IF NOT EXISTS settings (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, value TEXT NOT NULL);",
             kind: MigrationKind::Up,
         }
     ];

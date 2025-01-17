@@ -31,7 +31,7 @@ export function AutoComplete(props: AutoCompleteProps) {
   const [, setValue] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
-  const options = items.map(({id, label}) => (
+  const options = items.filter(({label}) => label.toLowerCase().includes(search.toLowerCase().trim())).map(({id, label}) => (
     <Combobox.Option value={id} key={id}>
       {label}
     </Combobox.Option>
