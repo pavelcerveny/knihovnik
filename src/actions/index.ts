@@ -110,7 +110,7 @@ interface SaveBook {
 	name: string;
 	publish_year: number | null;
 	number_of_pages: number | null;
-	author: Author | (Partial<Author> & { name: string });
+	authors: (Author | (Partial<Author> & { name: string }))[];
 	category: Category | (Partial<Category> & { name: string | null });
 	location: Location | (Partial<Location> & { name: string | null });
 }
@@ -120,13 +120,17 @@ export async function saveBook(book: SaveBook) {
 
 	let categoryId = null;
 	let locationId = null;
-	const authorId = book.author?.id
-		? book.author?.id
-		: (
-				await db.execute("INSERT INTO authors (name) VALUES (?)", [
-					book.author.name,
-				])
+
+	const authorIds = await Promise.all(
+		book.authors.map(async (author) => {
+			if (author.id) {
+				return author.id;
+			}
+			return (
+				await db.execute("INSERT INTO authors (name) VALUES (?)", [author.name])
 			).lastInsertId;
+		}),
+	);
 
 	if (book.category.name) {
 		categoryId = book.category?.id
@@ -148,17 +152,28 @@ export async function saveBook(book: SaveBook) {
 				).lastInsertId;
 	}
 
-	await db.execute(
-		"INSERT INTO books (name, publish_year, number_of_pages, author_id, category_id, location_id) VALUES (?, ?, ?, ?, ?, ?)",
-		[
-			book.name,
-			book.publish_year,
-			book.number_of_pages,
-			authorId,
-			categoryId,
-			locationId,
-		],
+	const bookId = (
+		await db.execute(
+			"INSERT INTO books (name, publish_year, number_of_pages, location_id) VALUES (?, ?, ?, ?)",
+			[book.name, book.publish_year, book.number_of_pages, locationId],
+		)
+	).lastInsertId;
+
+	await Promise.all(
+		authorIds.map((authorId) =>
+			db.execute("INSERT INTO author_book (author_id, book_id) VALUES (?, ?)", [
+				authorId,
+				bookId,
+			]),
+		),
 	);
+
+	if (categoryId) {
+		await db.execute(
+			"INSERT INTO category_book (category_id, book_id) VALUES (?, ?)",
+			[categoryId, bookId],
+		);
+	}
 }
 
 export async function deleteBook(id: unknown) {

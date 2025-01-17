@@ -39,6 +39,8 @@
 		"showAuthors": "Zobrazit autory",
 		"zoomIn": "Přiblížit",
 		"zoomOut": "Oddálit",
-		"edit": "Upravit knihu"
+		"edit": "Upravit knihu",
+		"addAuthor": "Přidat autora",
+		"atLeastOneAuthorIsRequired": "Je vyžadován alespoň jeden autor"
 	}
 }

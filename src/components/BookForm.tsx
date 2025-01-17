@@ -7,6 +7,7 @@ import {
 	Title,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
+import { randomId } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import type React from "react";
 import { useEffect, useState } from "react";
@@ -26,7 +27,7 @@ interface FormValues {
 	name: string;
 	publish_year: string | null;
 	number_of_pages: string | null;
-	author: string | null;
+	authors: { id?: string; key: string; name: string }[];
 	category: string | null;
 	location: string | null;
 }
@@ -35,7 +36,7 @@ const initialFormValues: FormValues = {
 	name: "",
 	publish_year: "",
 	number_of_pages: "",
-	author: null,
+	authors: [{ name: "", key: randomId() }],
 	category: null,
 	location: null,
 };
@@ -65,14 +66,46 @@ export const BookForm: React.FC = () => {
 		initialValues: initialFormValues,
 		validate: {
 			name: (value) => (value.trim().length > 0 ? null : t("nameIsRequired")),
-			author: (value) => (value ? null : t("authorIsRequired")),
+			authors: {
+				name: (value, _values, path) => {
+					if (path === "authors.0.name") {
+						return value ? null : t("atLeastOneAuthorIsRequired");
+					}
+					return null;
+				},
+			},
 		},
 	});
+
+	const authorInputs = form.getValues().authors.map((_item, index) => (
+		<AutoComplete
+			label={t("author")}
+			items={authors.map(({ id, name }) => ({
+				id: id.toString(),
+				label: name,
+			}))}
+			key={form.key(`authors.${index}.name`)}
+			{...form.getInputProps(`authors.${index}.name`)}
+		/>
+	));
 
 	const handleSubmit = async (values: FormValues) => {
 		const { name, number_of_pages, publish_year } = values;
 
-		const author = authors.find(({ id }) => id.toString() === values.author);
+		const savedAuthors = [];
+		for (const author of values.authors) {
+			if (author.name) {
+				const savedAuthor = authors.find(
+					({ id }) => id.toString() === author.name,
+				);
+				if (savedAuthor) {
+					savedAuthors.push(savedAuthor);
+				}
+			} else {
+				savedAuthors.push({ name: author.name });
+			}
+		}
+
 		const location = locations.find(
 			({ id }) => id.toString() === values.location,
 		);
@@ -87,7 +120,7 @@ export const BookForm: React.FC = () => {
 					? Number.parseInt(number_of_pages)
 					: null,
 				publish_year: publish_year ? Number.parseInt(publish_year) : null,
-				author: author ?? { name: values.author ?? "" },
+				authors: savedAuthors,
 				location: location ?? { name: values.location ?? "" },
 				category: category ?? { name: values.category ?? "" },
 			});
@@ -121,14 +154,15 @@ export const BookForm: React.FC = () => {
 					{...form.getInputProps("name")}
 				/>
 
-				<AutoComplete
-					label={t("author")}
-					items={authors.map(({ id, name }) => ({
-						id: id.toString(),
-						label: name,
-					}))}
-					{...form.getInputProps("author")}
-				/>
+				{authorInputs}
+
+				<Button
+					onClick={() =>
+						form.insertListItem("authors", { name: "", key: randomId() })
+					}
+				>
+					{t("addAuthor")}
+				</Button>
 
 				<AutoComplete
 					label={t("category")}
@@ -153,6 +187,8 @@ export const BookForm: React.FC = () => {
 					placeholder={t("publishedYear")}
 					{...form.getInputProps("publish_year")}
 					min={0}
+					stepHoldDelay={100}
+					stepHoldInterval={100}
 				/>
 
 				<NumberInput
@@ -160,6 +196,8 @@ export const BookForm: React.FC = () => {
 					placeholder={t("numberOfPages")}
 					{...form.getInputProps("number_of_pages")}
 					min={0}
+					stepHoldDelay={100}
+					stepHoldInterval={100}
 				/>
 
 				<Group justify="right" mt="md">
