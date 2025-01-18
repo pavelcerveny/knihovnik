@@ -15,7 +15,7 @@ import Books, { loader as bookLoader } from "./routes/books";
 import Root from "./routes/root";
 
 import "./i18n";
-import EditBook from "./routes/edit-book";
+import EditBook, { loader as editBookLoader } from "./routes/edit-book";
 
 const router = createBrowserRouter([
 	{
@@ -39,6 +39,7 @@ const router = createBrowserRouter([
 			{
 				path: "/books/:id/edit",
 				element: <EditBook />,
+				loader: editBookLoader,
 			},
 		],
 	},

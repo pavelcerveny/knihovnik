@@ -5,7 +5,7 @@ import {
 	type InputBaseProps,
 	useCombobox,
 } from "@mantine/core";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 interface GetInputPropsReturnType {
@@ -26,7 +26,12 @@ interface AutoCompleteProps extends InputProps {
 }
 
 export function AutoComplete(props: AutoCompleteProps) {
-	const { items, comboboxProps, ...restInputProps } = props;
+	const {
+		items,
+		comboboxProps,
+		value: defaultValue,
+		...restInputProps
+	} = props;
 
 	const combobox = useCombobox({
 		onDropdownClose: () => combobox.resetSelectedOption(),
@@ -37,12 +42,24 @@ export function AutoComplete(props: AutoCompleteProps) {
 	const [, setValue] = useState<string | null>(null);
 	const [search, setSearch] = useState("");
 
+	useEffect(() => {
+		setSearch(
+			defaultValue
+				? (items.find(({ id }) => id === defaultValue)?.label ?? "")
+				: "",
+		);
+	}, [defaultValue, items]);
+
 	const options = items
 		.filter(({ label }) =>
 			label.toLowerCase().includes(search.toLowerCase().trim()),
 		)
 		.map(({ id, label }) => (
-			<Combobox.Option value={id} key={id}>
+			<Combobox.Option
+				value={id}
+				key={id}
+				active={id.toString() === defaultValue?.toString()}
+			>
 				{label}
 			</Combobox.Option>
 		));
@@ -63,8 +80,8 @@ export function AutoComplete(props: AutoCompleteProps) {
 			<Combobox.Target>
 				<InputBase
 					{...restInputProps}
-					rightSection={<Combobox.Chevron />}
 					value={search}
+					rightSection={<Combobox.Chevron />}
 					onChange={(event) => {
 						combobox.openDropdown();
 						combobox.updateSelectedOptionIndex();

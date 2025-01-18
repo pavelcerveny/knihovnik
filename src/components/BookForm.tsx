@@ -1,15 +1,7 @@
-import {
-	Box,
-	Button,
-	Group,
-	NumberInput,
-	TextInput,
-	Title,
-} from "@mantine/core";
+import { Box, Button, Group, NumberInput, TextInput } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { randomId } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import type React from "react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -20,28 +12,30 @@ import {
 	fetchCategories,
 	fetchLocations,
 	saveBook,
+	updateBook,
 } from "../actions";
 import { AutoComplete } from "./AutoComplete";
 
-interface FormValues {
+export interface FormValues {
+	id?: number;
 	name: string;
-	publish_year: string | null;
-	number_of_pages: string | null;
-	authors: { id?: string; key: string; name: string }[];
-	category: string | null;
-	location: string | null;
+	publish_year: number | undefined;
+	number_of_pages: number | undefined;
+	authors: Partial<Author>[];
+	categories: Partial<Category>[];
+	location: string | undefined;
 }
 
 const initialFormValues: FormValues = {
 	name: "",
-	publish_year: "",
-	number_of_pages: "",
-	authors: [{ name: "", key: randomId() }],
-	category: null,
-	location: null,
+	publish_year: undefined,
+	number_of_pages: undefined,
+	authors: [{ name: "" }],
+	categories: [{ name: "" }],
+	location: undefined,
 };
 
-export const BookForm: React.FC = () => {
+export function BookForm({ editValues }: { editValues?: FormValues }) {
 	const [authors, setAuthors] = useState<Author[]>([]);
 	const [categories, setCategories] = useState<Category[]>([]);
 	const [locations, setLocations] = useState<Location[]>([]);
@@ -63,7 +57,7 @@ export const BookForm: React.FC = () => {
 	}, []);
 
 	const form = useForm<FormValues>({
-		initialValues: initialFormValues,
+		initialValues: editValues ?? initialFormValues,
 		validate: {
 			name: (value) => (value.trim().length > 0 ? null : t("nameIsRequired")),
 			authors: {
@@ -89,6 +83,18 @@ export const BookForm: React.FC = () => {
 		/>
 	));
 
+	const categoryInputs = form.getValues().categories.map((_item, index) => (
+		<AutoComplete
+			label={t("category")}
+			items={categories.map(({ id, name }) => ({
+				id: id.toString(),
+				label: name,
+			}))}
+			key={form.key(`categories.${index}.name`)}
+			{...form.getInputProps(`categories.${index}.name`)}
+		/>
+	));
+
 	const handleSubmit = async (values: FormValues) => {
 		const { name, number_of_pages, publish_year } = values;
 
@@ -106,30 +112,54 @@ export const BookForm: React.FC = () => {
 			}
 		}
 
+		const savedCategories = [];
+		for (const category of values.categories) {
+			if (category.name) {
+				const savedCategory = categories.find(
+					({ id }) => id.toString() === category.name,
+				);
+				if (savedCategory) {
+					savedCategories.push(savedCategory);
+				}
+			} else {
+				savedCategories.push({ name: category.name });
+			}
+		}
+
 		const location = locations.find(
 			({ id }) => id.toString() === values.location,
 		);
-		const category = categories.find(
-			({ id }) => id.toString() === values.category,
-		);
 
 		try {
-			await saveBook({
+			const bookData = {
 				name,
-				number_of_pages: number_of_pages
-					? Number.parseInt(number_of_pages)
-					: null,
-				publish_year: publish_year ? Number.parseInt(publish_year) : null,
+				number_of_pages: number_of_pages ?? null,
+				publish_year: publish_year ?? null,
 				authors: savedAuthors,
 				location: location ?? { name: values.location ?? "" },
-				category: category ?? { name: values.category ?? "" },
-			});
+				categories: savedCategories,
+			};
 
-			notifications.show({
-				title: t("bookAdded"),
-				message: "",
-				color: "green",
-			});
+			if (editValues) {
+				await updateBook({
+					...bookData,
+					id: editValues.id!,
+				});
+
+				notifications.show({
+					title: t("bookUpdated"),
+					message: "",
+					color: "green",
+				});
+			} else {
+				await saveBook(bookData);
+
+				notifications.show({
+					title: t("bookAdded"),
+					message: "",
+					color: "green",
+				});
+			}
 		} catch (error) {
 			const err = error as Error;
 			notifications.show({
@@ -143,7 +173,6 @@ export const BookForm: React.FC = () => {
 
 	return (
 		<Box className="max-w-md">
-			<Title order={2}>{t("newBook")}</Title>
 			<form
 				onSubmit={form.onSubmit(handleSubmit)}
 				className="flex flex-col gap-4 mt-4"
@@ -164,14 +193,7 @@ export const BookForm: React.FC = () => {
 					{t("addAuthor")}
 				</Button>
 
-				<AutoComplete
-					label={t("category")}
-					items={categories.map(({ id, name }) => ({
-						id: id.toString(),
-						label: name,
-					}))}
-					{...form.getInputProps("category")}
-				/>
+				{categoryInputs}
 
 				<AutoComplete
 					label={t("location")}
@@ -206,4 +228,4 @@ export const BookForm: React.FC = () => {
 			</form>
 		</Box>
 	);
-};
+}

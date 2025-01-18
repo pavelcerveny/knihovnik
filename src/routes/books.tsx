@@ -11,7 +11,13 @@ import {
 	useRevalidator,
 	useSearchParams,
 } from "react-router-dom";
-import { type Book, deleteBook, fetchBooks } from "../actions";
+import {
+	type Author,
+	type Book,
+	type Category,
+	deleteBook,
+	fetchBooks,
+} from "../actions";
 import { BaseTable } from "../components";
 import { useDeleteModalConfirmModal } from "../hooks";
 
@@ -54,12 +60,14 @@ export default function Books() {
 					headerName: t("name"),
 				},
 				{
-					field: "author",
+					field: "authors",
 					colId: "author",
 					cellDataType: "text",
 					headerName: t("author"),
-					valueFormatter: ({ value }) => value?.name,
-					filterValueGetter: ({ data }) => data?.author?.name,
+					valueFormatter: ({ value }) =>
+						value.map((author: Author) => author.name).join(", "),
+					filterValueGetter: ({ data }) =>
+						data?.authors?.map((author: Author) => author.name).join(", "),
 				},
 				{
 					field: "publish_year",
@@ -69,11 +77,15 @@ export default function Books() {
 					maxWidth: 80,
 				},
 				{
-					field: "category",
+					field: "categories",
 					colId: "category",
 					headerName: t("category"),
-					valueFormatter: ({ value }) => value?.name,
-					filterValueGetter: ({ data }) => data?.category?.name,
+					valueFormatter: ({ value }) =>
+						value.map((category: Category) => category.name).join(", "),
+					filterValueGetter: ({ data }) =>
+						data?.categories
+							?.map((category: Category) => category.name)
+							.join(", "),
 				},
 				{
 					field: "location",
@@ -100,7 +112,7 @@ export default function Books() {
 					cellRenderer: ({ data }: ICellRendererParams) => {
 						return (
 							<div className="flex space-x-2 justify-center items-center w-full h-full">
-								<Tooltip label={t("edit")}>
+								<Tooltip label={t("updateBook")}>
 									<Button
 										type="button"
 										size="sm"
@@ -111,7 +123,7 @@ export default function Books() {
 										<PencilIcon className="h-5 w-5 cursor-pointer" />
 									</Button>
 								</Tooltip>
-								<Tooltip label={t("delete")}>
+								<Tooltip label={t("deleteBook")}>
 									<Button
 										type="button"
 										size="sm"

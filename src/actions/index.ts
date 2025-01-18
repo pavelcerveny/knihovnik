@@ -28,8 +28,8 @@ export interface Book {
 	publish_year: number;
 	number_of_pages: number;
 	image_url: string;
-	author: Author | null;
-	category: Category | null;
+	authors: Author[];
+	categories: Category[];
 	location: Location | null;
 }
 
@@ -62,9 +62,92 @@ export async function fetchSettings() {
 	return { settings };
 }
 
+export async function fetchBook({ id }: { id: number }) {
+	const { books } = await fetchBooks({ id });
+	return { book: books?.[0] };
+}
+
+interface RawBook {
+	id: number;
+	name: string;
+	publish_year: number;
+	number_of_pages: number;
+	image_url: string;
+	authorId: number | null;
+	authorName: string | null;
+	categoryId: number | null;
+	categoryName: string | null;
+	locationId: number | null;
+	locationName: string | null;
+}
+
+interface SaveBook {
+	name: string;
+	publish_year: number | null;
+	number_of_pages: number | null;
+	authors: Partial<Author>[];
+	categories: Partial<Category>[];
+	location: Location | (Partial<Location> & { name: string | null });
+}
+
+interface UpdateBook extends SaveBook {
+	id: number;
+}
+
+function hydrateBooks(rawRows: RawBook[]): Book[] {
+	const booksMap: Map<number, Book> = new Map();
+
+	for (const row of rawRows) {
+		const {
+			id,
+			authorId,
+			authorName,
+			categoryId,
+			categoryName,
+			locationId,
+			locationName,
+			...restBookProps
+		} = row;
+
+		if (!booksMap.has(id)) {
+			booksMap.set(id, {
+				id,
+				authors: [],
+				categories: [],
+				location:
+					locationId && locationName
+						? { id: locationId, name: locationName }
+						: null,
+				...restBookProps,
+			});
+		}
+
+		const book = booksMap.get(id)!;
+
+		if (
+			authorId &&
+			authorName &&
+			!book.authors.some((author) => author.id === authorId)
+		) {
+			book.authors.push({ id: authorId, name: authorName });
+		}
+
+		if (
+			categoryId &&
+			categoryName &&
+			!book.categories.some((category) => category.id === categoryId)
+		) {
+			book.categories.push({ id: categoryId, name: categoryName });
+		}
+	}
+
+	return Array.from(booksMap.values());
+}
+
 export async function fetchBooks({
 	searchValue,
-}: { searchValue?: string }): Promise<{ books: Book[] }> {
+	id,
+}: { searchValue?: string; id?: number }): Promise<{ books: Book[] }> {
 	const db = await Database.load(DB_PATH);
 
 	let where = "";
@@ -73,8 +156,12 @@ export async function fetchBooks({
 		where = `WHERE books.name LIKE '%${searchValue}%' OR authors.name LIKE '%${searchValue}%' OR categories.name LIKE '%${searchValue}%' OR locations.name LIKE '%${searchValue}%'`;
 	}
 
+	if (id) {
+		where = `WHERE books.id = ${id}`;
+	}
+
 	const books =
-		(await db.select<Record<string, unknown>[]>(`
+		(await db.select<RawBook[]>(`
       SELECT books.*, 
       authors.id as authorId, authors.name as authorName, 
       categories.id as categoryId, categories.name as categoryName, 
@@ -89,40 +176,13 @@ export async function fetchBooks({
       ORDER BY books.name
       `)) ?? [];
 
-	const hydratedBooks = books.map((book) => ({
-		id: book.id,
-		name: book.name,
-		publish_year: book.publish_year,
-		number_of_pages: book.number_of_pages,
-		image_url: book.image_url,
-		author: book.authorId ? { id: book.authorId, name: book.authorName } : null,
-		category: book.categoryId
-			? { id: book.categoryId, name: book.categoryName }
-			: null,
-		location: book.locationId
-			? { id: book.locationId, name: book.locationName }
-			: null,
-	}));
-	return { books: hydratedBooks as Book[] };
+	return { books: hydrateBooks(books) };
 }
 
-interface SaveBook {
-	name: string;
-	publish_year: number | null;
-	number_of_pages: number | null;
-	authors: (Author | (Partial<Author> & { name: string }))[];
-	category: Category | (Partial<Category> & { name: string | null });
-	location: Location | (Partial<Location> & { name: string | null });
-}
-
-export async function saveBook(book: SaveBook) {
+async function insertNewAuthors({ authors }: { authors: SaveBook["authors"] }) {
 	const db = await Database.load(DB_PATH);
-
-	let categoryId = null;
-	let locationId = null;
-
-	const authorIds = await Promise.all(
-		book.authors.map(async (author) => {
+	return Promise.all(
+		authors.map(async (author) => {
 			if (author.id) {
 				return author.id;
 			}
@@ -131,48 +191,140 @@ export async function saveBook(book: SaveBook) {
 			).lastInsertId;
 		}),
 	);
+}
 
-	if (book.category.name) {
-		categoryId = book.category?.id
-			? book.category?.id
-			: (
-					await db.execute("INSERT INTO categories (name) VALUES (?)", [
-						book.category.name,
-					])
-				).lastInsertId;
-	}
+async function insertNewCategories({
+	categories,
+}: { categories: SaveBook["categories"] }) {
+	const db = await Database.load(DB_PATH);
+	return Promise.all(
+		categories.map(async (category) => {
+			if (category.id) {
+				return category.id;
+			}
+			return (
+				await db.execute("INSERT INTO categories (name) VALUES (?)", [
+					category.name,
+				])
+			).lastInsertId;
+		}),
+	);
+}
 
-	if (book.location.name) {
-		locationId = book.location?.id
-			? book.location?.id
+async function insertNewLocations({
+	location,
+}: { location: SaveBook["location"] }) {
+	const db = await Database.load(DB_PATH);
+	let locationId = null;
+
+	if (location.name) {
+		locationId = location?.id
+			? location?.id
 			: (
 					await db.execute("INSERT INTO locations (name) VALUES (?)", [
-						book.location.name,
+						location.name,
 					])
 				).lastInsertId;
 	}
 
-	const bookId = (
-		await db.execute(
-			"INSERT INTO books (name, publish_year, number_of_pages, location_id) VALUES (?, ?, ?, ?)",
-			[book.name, book.publish_year, book.number_of_pages, locationId],
-		)
-	).lastInsertId;
+	return locationId;
+}
 
-	await Promise.all(
-		authorIds.map((authorId) =>
-			db.execute("INSERT INTO author_book (author_id, book_id) VALUES (?, ?)", [
-				authorId,
-				bookId,
-			]),
-		),
-	);
+export async function saveBook(book: SaveBook) {
+	const db = await Database.load(DB_PATH);
 
-	if (categoryId) {
-		await db.execute(
-			"INSERT INTO category_book (category_id, book_id) VALUES (?, ?)",
-			[categoryId, bookId],
+	await db.execute("BEGIN TRANSACTION");
+
+	try {
+		const locationId = await insertNewLocations({ location: book.location });
+
+		const authorIds = await insertNewAuthors({ authors: book.authors });
+
+		const categoryIds = await insertNewCategories({
+			categories: book.categories,
+		});
+
+		const bookId = (
+			await db.execute(
+				"INSERT INTO books (name, publish_year, number_of_pages, location_id) VALUES (?, ?, ?, ?)",
+				[book.name, book.publish_year, book.number_of_pages, locationId],
+			)
+		).lastInsertId;
+
+		await Promise.all(
+			authorIds.map((authorId) =>
+				db.execute(
+					"INSERT INTO author_book (author_id, book_id) VALUES (?, ?)",
+					[authorId, bookId],
+				),
+			),
 		);
+
+		await Promise.all(
+			categoryIds.map((categoryId) =>
+				db.execute(
+					"INSERT INTO category_book (category_id, book_id) VALUES (?, ?)",
+					[categoryId, bookId],
+				),
+			),
+		);
+
+		await db.execute("COMMIT");
+	} catch (error) {
+		await db.execute("ROLLBACK");
+		throw error;
+	}
+}
+
+export async function updateBook(book: UpdateBook) {
+	const db = await Database.load(DB_PATH);
+
+	const { id, location, authors, categories } = book;
+
+	await db.execute("BEGIN TRANSACTION");
+
+	try {
+		const locationId = await insertNewLocations({ location });
+
+		const authorIds = await insertNewAuthors({ authors });
+
+		const categoryIds = await insertNewCategories({ categories });
+
+		await db.execute(
+			"DELETE FROM author_book WHERE book_id = ? AND author_id NOT IN (?)",
+			[id, authorIds],
+		);
+
+		await db.execute(
+			"DELETE FROM category_book WHERE book_id = ? AND category_id NOT IN (?)",
+			[id, categoryIds],
+		);
+
+		for (const author of authorIds) {
+			await db.execute(
+				"INSERT OR IGNORE INTO author_book (book_id, author_id) VALUES (?, ?)",
+				[id, author],
+			);
+		}
+
+		for (const category of categoryIds) {
+			await db.execute(
+				"INSERT OR IGNORE INTO category_book (book_id, category_id) VALUES (?, ?)",
+				[id, category],
+			);
+		}
+
+		await db.execute(
+			`UPDATE books
+	 SET name = ?, publish_year = ?, number_of_pages = ?, location_id = ?
+	 WHERE id = ?`,
+			[book.name, book.publish_year, book.number_of_pages, locationId, id],
+		);
+
+		await db.execute("COMMIT");
+	} catch (error) {
+		await db.execute("ROLLBACK");
+		throw error;
 	}
 }
 
