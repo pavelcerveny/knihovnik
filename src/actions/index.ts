@@ -233,47 +233,38 @@ async function insertNewLocations({
 export async function saveBook(book: SaveBook) {
 	const db = await Database.load(DB_PATH);
 
-	await db.execute("BEGIN TRANSACTION");
+	const locationId = await insertNewLocations({ location: book.location });
 
-	try {
-		const locationId = await insertNewLocations({ location: book.location });
+	const authorIds = await insertNewAuthors({ authors: book.authors });
 
-		const authorIds = await insertNewAuthors({ authors: book.authors });
+	const categoryIds = await insertNewCategories({
+		categories: book.categories,
+	});
 
-		const categoryIds = await insertNewCategories({
-			categories: book.categories,
-		});
+	const bookId = (
+		await db.execute(
+			"INSERT INTO books (name, publish_year, number_of_pages, location_id) VALUES (?, ?, ?, ?)",
+			[book.name, book.publish_year, book.number_of_pages, locationId],
+		)
+	).lastInsertId;
 
-		const bookId = (
-			await db.execute(
-				"INSERT INTO books (name, publish_year, number_of_pages, location_id) VALUES (?, ?, ?, ?)",
-				[book.name, book.publish_year, book.number_of_pages, locationId],
-			)
-		).lastInsertId;
+	await Promise.all(
+		authorIds.map((authorId) =>
+			db.execute("INSERT INTO author_book (author_id, book_id) VALUES (?, ?)", [
+				authorId,
+				bookId,
+			]),
+		),
+	);
 
-		await Promise.all(
-			authorIds.map((authorId) =>
-				db.execute(
-					"INSERT INTO author_book (author_id, book_id) VALUES (?, ?)",
-					[authorId, bookId],
-				),
+	await Promise.all(
+		categoryIds.map((categoryId) =>
+			db.execute(
+				"INSERT INTO category_book (category_id, book_id) VALUES (?, ?)",
+				[categoryId, bookId],
 			),
-		);
-
-		await Promise.all(
-			categoryIds.map((categoryId) =>
-				db.execute(
-					"INSERT INTO category_book (category_id, book_id) VALUES (?, ?)",
-					[categoryId, bookId],
-				),
-			),
-		);
-
-		await db.execute("COMMIT");
-	} catch (error) {
-		await db.execute("ROLLBACK");
-		throw error;
-	}
+		),
+	);
 }
 
 export async function updateBook(book: UpdateBook) {
@@ -281,51 +272,42 @@ export async function updateBook(book: UpdateBook) {
 
 	const { id, location, authors, categories } = book;
 
-	await db.execute("BEGIN TRANSACTION");
+	const locationId = await insertNewLocations({ location });
 
-	try {
-		const locationId = await insertNewLocations({ location });
+	const authorIds = await insertNewAuthors({ authors });
 
-		const authorIds = await insertNewAuthors({ authors });
+	const categoryIds = await insertNewCategories({ categories });
 
-		const categoryIds = await insertNewCategories({ categories });
+	await db.execute(
+		"DELETE FROM author_book WHERE book_id = ? AND author_id NOT IN (?)",
+		[id, authorIds],
+	);
 
+	await db.execute(
+		"DELETE FROM category_book WHERE book_id = ? AND category_id NOT IN (?)",
+		[id, categoryIds],
+	);
+
+	for (const author of authorIds) {
 		await db.execute(
-			"DELETE FROM author_book WHERE book_id = ? AND author_id NOT IN (?)",
-			[id, authorIds],
+			"INSERT OR IGNORE INTO author_book (book_id, author_id) VALUES (?, ?)",
+			[id, author],
 		);
+	}
 
+	for (const category of categoryIds) {
 		await db.execute(
-			"DELETE FROM category_book WHERE book_id = ? AND category_id NOT IN (?)",
-			[id, categoryIds],
+			"INSERT OR IGNORE INTO category_book (book_id, category_id) VALUES (?, ?)",
+			[id, category],
 		);
+	}
 
-		for (const author of authorIds) {
-			await db.execute(
-				"INSERT OR IGNORE INTO author_book (book_id, author_id) VALUES (?, ?)",
-				[id, author],
-			);
-		}
-
-		for (const category of categoryIds) {
-			await db.execute(
-				"INSERT OR IGNORE INTO category_book (book_id, category_id) VALUES (?, ?)",
-				[id, category],
-			);
-		}
-
-		await db.execute(
-			`UPDATE books
+	await db.execute(
+		`UPDATE books
 	 SET name = ?, publish_year = ?, number_of_pages = ?, location_id = ?
 	 WHERE id = ?`,
-			[book.name, book.publish_year, book.number_of_pages, locationId, id],
-		);
-
-		await db.execute("COMMIT");
-	} catch (error) {
-		await db.execute("ROLLBACK");
-		throw error;
-	}
+		[book.name, book.publish_year, book.number_of_pages, locationId, id],
+	);
 }
 
 export async function deleteBook(id: unknown) {

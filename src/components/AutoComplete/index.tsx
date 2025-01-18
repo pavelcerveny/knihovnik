@@ -5,7 +5,7 @@ import {
 	type InputBaseProps,
 	useCombobox,
 } from "@mantine/core";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 interface GetInputPropsReturnType {
@@ -42,17 +42,28 @@ export function AutoComplete(props: AutoCompleteProps) {
 	const [, setValue] = useState<string | null>(null);
 	const [search, setSearch] = useState("");
 
+	const defaultValueRef = useRef(false);
+
 	useEffect(() => {
-		setSearch(
-			defaultValue
-				? (items.find(({ id }) => id === defaultValue)?.label ?? "")
-				: "",
-		);
+		if (defaultValueRef.current === false) {
+			// when adding new book, default value is set to undefined
+			if (defaultValue === undefined) {
+				defaultValueRef.current = true;
+			}
+			if (defaultValue && items.length > 0) {
+				setSearch(
+					defaultValue
+						? (items.find(({ id }) => id === defaultValue)?.label ?? "")
+						: "",
+				);
+				defaultValueRef.current = true;
+			}
+		}
 	}, [defaultValue, items]);
 
 	const options = items
 		.filter(({ label }) =>
-			label.toLowerCase().includes(search.toLowerCase().trim()),
+			label.toLocaleLowerCase().includes(search.toLocaleLowerCase().trim()),
 		)
 		.map(({ id, label }) => (
 			<Combobox.Option

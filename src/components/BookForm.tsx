@@ -30,8 +30,8 @@ const initialFormValues: FormValues = {
 	name: "",
 	publish_year: undefined,
 	number_of_pages: undefined,
-	authors: [{ name: "" }],
-	categories: [{ name: "" }],
+	authors: [{ name: undefined }],
+	categories: [{ name: undefined }],
 	location: undefined,
 };
 
@@ -187,7 +187,7 @@ export function BookForm({ editValues }: { editValues?: FormValues }) {
 
 				<Button
 					onClick={() =>
-						form.insertListItem("authors", { name: "", key: randomId() })
+						form.insertListItem("authors", { name: undefined, key: randomId() })
 					}
 				>
 					{t("addAuthor")}

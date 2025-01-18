@@ -37,11 +37,11 @@ export async function loader({
 		authors:
 			authors.length > 0
 				? authors.map((author) => ({ name: author.id.toString() }))
-				: [{ name: "" }],
+				: [{ name: undefined }],
 		categories:
 			categories.length > 0
 				? categories.map((category) => ({ name: category.id.toString() }))
-				: [{ name: "" }],
+				: [{ name: undefined }],
 		location: location?.id.toString(),
 	};
 
