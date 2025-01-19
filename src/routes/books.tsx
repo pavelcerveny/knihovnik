@@ -2,7 +2,7 @@ import { Button, TextInput, Tooltip } from "@mantine/core";
 import type { ColDef, ICellRendererParams } from "ag-grid-community";
 import type { AgGridReact } from "ag-grid-react";
 import { PencilIcon, SearchIcon, TrashIcon } from "lucide-react";
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
 	type LoaderFunctionArgs,
@@ -11,6 +11,8 @@ import {
 	useRevalidator,
 	useSearchParams,
 } from "react-router-dom";
+import { useDebounceCallback } from "usehooks-ts";
+
 import {
 	type Author,
 	type Book,
@@ -39,7 +41,8 @@ export default function Books() {
 	const { t } = useTranslation();
 
 	const navigate = useNavigate();
-	const [searchParams, setSearchParams] = useSearchParams();
+	const [, setSearchParams] = useSearchParams();
+	const [searchValue, setSearchValue] = useState("");
 	const revalidator = useRevalidator();
 
 	const { confirmDeleteModal, openDeleteConfirmModal } =
@@ -49,6 +52,8 @@ export default function Books() {
 				revalidator.revalidate();
 			},
 		});
+
+	const debounced = useDebounceCallback(setSearchParams, 300);
 
 	const columns = useMemo(
 		() =>
@@ -151,10 +156,11 @@ export default function Books() {
 				placeholder={t("searchBooks")}
 				rightSectionWidth={42}
 				leftSection={<SearchIcon size={18} />}
-				onChange={(event) =>
-					setSearchParams({ search: event.currentTarget.value })
-				}
-				value={searchParams.get("search") ?? ""}
+				onChange={(event) => {
+					setSearchValue(event.currentTarget.value);
+					debounced({ search: event.currentTarget.value });
+				}}
+				value={searchValue}
 			/>
 			<BaseTable
 				rowData={books}
